@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { GlassCard } from '../components/GlassCard';
 import { convertBase } from '../utils/converter';
 import { getCookie, setCookie, storage } from '../utils/storage';
-import { Trophy, Check, X, ChevronRight, RefreshCcw, Flame } from 'lucide-react';
+import { Trophy, Check, RefreshCcw, Flame, ArrowRight } from 'lucide-react';
 
 type Difficulty = 'Novice' | 'Adept' | 'Master';
 
@@ -21,6 +21,9 @@ export const Quiz: React.FC = () => {
   const [bestStreak, setBestStreak] = useState(0);
   const [username, setUsername] = useState('');
 
+  const inputRef = useRef<HTMLInputElement>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     // Load User Data
     const user = getCookie('mns_username');
@@ -30,9 +33,23 @@ export const Quiz: React.FC = () => {
     setBestStreak(savedStreak);
     
     generateQuestion();
+
+    return () => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
   }, []);
 
+  // Auto-focus input when question changes or feedback is cleared
+  useEffect(() => {
+    if (!feedback && inputRef.current) {
+        // Small delay to ensure render is complete and transition isn't blocking
+        setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  }, [question, feedback]);
+
   const generateQuestion = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
     let bases = [10, 2];
     let maxVal = 31;
 
@@ -53,13 +70,25 @@ export const Quiz: React.FC = () => {
     const valDec = Math.floor(Math.random() * maxVal);
     const valStr = valDec.toString(fromBase).toUpperCase();
 
-    setQuestion({ value: valStr, fromBase, toBase });
+    // Avoid exact duplicate of previous question immediately
+    setQuestion((prev) => {
+        if (prev && prev.value === valStr && prev.fromBase === fromBase && prev.toBase === toBase) {
+            // Simple perturbation to ensure difference
+            const newValDec = (valDec + 1) % maxVal;
+            return {
+                 value: newValDec.toString(fromBase).toUpperCase(),
+                 fromBase,
+                 toBase
+            };
+        }
+        return { value: valStr, fromBase, toBase };
+    });
+
     setAnswer('');
     setFeedback(null);
   };
 
   useEffect(() => {
-    // Reset streak on difficulty change
     setStreak(0);
     generateQuestion();
   }, [difficulty]);
@@ -96,16 +125,16 @@ export const Quiz: React.FC = () => {
       }
       
       // Update Leaderboard (Weighted Points)
-      // Check for username even if state is empty (race condition fix)
       const currentUser = username || getCookie('mns_username') || '';
-      
       if (currentUser) {
-          // Always try to save the score. The storage utility handles checking 
-          // if this new score is higher than the existing leaderboard score.
           storage.saveScore(currentUser, points);
-          
           if (!username) setUsername(currentUser);
       }
+
+      // Auto Advance after delay
+      timeoutRef.current = setTimeout(() => {
+          generateQuestion();
+      }, 1200);
 
     } else {
       // Wrong
@@ -117,11 +146,24 @@ export const Quiz: React.FC = () => {
       if (currentUser && streak > 0) {
         const points = streak * getMultiplier(difficulty);
         storage.addLog(currentUser, 'Completed Quiz Streak', `Streak: ${streak} | Difficulty: ${difficulty} | Score: ${points}`);
-        // Ensure final score is saved even on loss if it's a high score
         storage.saveScore(currentUser, points);
       }
       
       setStreak(0);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+        if (feedback === 'correct') {
+            // User impatient, go next immediately
+            generateQuestion();
+        } else if (feedback === 'wrong') {
+            // Allow user to skip/next on wrong
+            generateQuestion();
+        } else {
+            checkAnswer();
+        }
     }
   };
 
@@ -181,7 +223,7 @@ export const Quiz: React.FC = () => {
                         <span className="text-xs text-gray-500 mb-1">FROM</span>
                         <span className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 w-24">{getBaseName(question.fromBase)}</span>
                     </div>
-                    <ChevronRight size={20} className="text-gray-600 mt-4"/>
+                    <ArrowRight size={20} className="text-gray-600 mt-4"/>
                     <div className="flex flex-col items-center">
                         <span className="text-xs text-blue-400/70 mb-1">TO</span>
                         <span className="px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/30 text-blue-200 w-24">{getBaseName(question.toBase)}</span>
@@ -192,15 +234,15 @@ export const Quiz: React.FC = () => {
 
         <div className="mt-8 space-y-4">
             <input 
+                ref={inputRef}
                 type="text" 
                 value={answer}
                 onChange={(e) => setAnswer(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && !feedback && checkAnswer()}
+                onKeyDown={handleKeyDown}
                 placeholder="Type answer..."
                 autoComplete="off"
                 className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-center text-2xl font-mono text-white placeholder-gray-700 focus:outline-none focus:border-blue-500/50 transition-all"
-                disabled={feedback !== null}
-                autoFocus
+                disabled={feedback === 'correct'} // Disable input only when correct to prevent typing during auto-advance
             />
             
             {feedback === null ? (
@@ -220,7 +262,7 @@ export const Quiz: React.FC = () => {
                         : 'bg-red-500/20 border-red-500/30 text-red-300 hover:bg-red-500/30'
                     }`}
                 >
-                    {feedback === 'correct' ? <><Check size={20}/> Correct! Next</> : <><RefreshCcw size={20}/> Incorrect. Try Again</>}
+                    {feedback === 'correct' ? <><Check size={20}/> Correct! Next...</> : <><RefreshCcw size={20}/> Incorrect. Skip/Next</>}
                 </button>
             )}
         </div>
