@@ -6,8 +6,10 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: '0.0.0.0', // Required for Render to detect the open port
+    allowedHosts: true,
   },
   preview: {
     host: '0.0.0.0', // Required if using 'vite preview' in production
+    allowedHosts: true,
   }
 });
