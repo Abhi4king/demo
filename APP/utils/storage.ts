@@ -53,7 +53,12 @@ export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error';
 // Simulated Backend (LocalStorage + npoint.io)
 const LOGS_KEY = 'mns_admin_logs';
 const LEADERBOARD_KEY = 'mns_leaderboard';
-const SYNC_API_URL = getEnvVar('SYNC_API_URL', "https://api.npoint.io/42f4d1ac597f1385b282");
+
+// Construct URL intelligently to handle cases where Env Var is just the ID
+const rawSyncVar = getEnvVar('SYNC_API_URL', "https://api.npoint.io/42f4d1ac597f1385b282");
+const SYNC_API_URL = rawSyncVar.startsWith('http') 
+    ? rawSyncVar 
+    : `https://api.npoint.io/${rawSyncVar}`;
 
 // Event Management
 type EventType = 'syncStatus' | 'dataChange';
@@ -138,7 +143,7 @@ const performSync = async () => {
         const allLogs = [...localLogs, ...remoteLogs];
         const uniqueLogs = Array.from(new Map(allLogs.map(item => [item.id, item])).values())
             .sort((a, b) => b.timestamp - a.timestamp)
-            .slice(0, 1000);
+            .slice(0, 100); // Keep only latest 100 logs
 
         // Merge Leaderboard: Keep unique USERS, retaining their HIGHEST score.
         const allScores = [...localScores, ...remoteScores];
@@ -218,7 +223,7 @@ export const storage = {
             timestamp: Date.now(),
             details
         };
-        const updatedLogs = [newLog, ...logs].slice(0, 1000);
+        const updatedLogs = [newLog, ...logs].slice(0, 100); // Limit to 100 logs
         localStorage.setItem(LOGS_KEY, JSON.stringify(updatedLogs));
         notifyDataChange();
         debouncedSync();
@@ -226,6 +231,33 @@ export const storage = {
 
     getLogs: (): LogEntry[] => {
         return JSON.parse(localStorage.getItem(LOGS_KEY) || '[]');
+    },
+
+    clearLogs: () => {
+        localStorage.removeItem(LOGS_KEY);
+        notifyDataChange();
+        
+        // Push empty logs to remote to overwrite
+        if (!isSyncDisabled) {
+            notifySyncStatus('syncing');
+            fetch(SYNC_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    logs: [], 
+                    leaderboard: storage.getLeaderboard() 
+                })
+            }).then((res) => {
+                if(res.status === 401 || res.status === 403) {
+                    isSyncDisabled = true;
+                    notifySyncStatus('idle');
+                } else {
+                    notifySyncStatus('synced');
+                    notifyDataChange();
+                }
+            })
+            .catch(() => notifySyncStatus('error'));
+        }
     },
 
     // Leaderboard
