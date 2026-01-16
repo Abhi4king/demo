@@ -38,6 +38,13 @@ export const Admin: React.FC = () => {
     }
   };
 
+  const handleClearLogs = () => {
+    if (confirm("Are you sure you want to clear all system logs?")) {
+        storage.clearLogs();
+        alert("Logs cleared.");
+    }
+  };
+
   useEffect(() => {
     if (isAuthenticated) {
         // Initial load
@@ -120,15 +127,24 @@ export const Admin: React.FC = () => {
       </div>
 
       {activeTab === 'logs' && (
-        <GlassCard className="p-0 overflow-hidden">
+        <GlassCard className="p-0 overflow-hidden relative">
+            <div className="flex justify-between items-center p-4 bg-white/5 border-b border-white/10">
+                <h3 className="text-sm font-medium text-gray-400 uppercase tracking-wider">System Logs</h3>
+                 <button 
+                    onClick={handleClearLogs}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 text-red-300 border border-red-500/20 rounded-lg hover:bg-red-500/20 transition-all text-xs"
+                >
+                    <Trash2 size={14} /> Clear Logs
+                </button>
+            </div>
             <div className="max-h-[600px] overflow-y-auto">
                 <table className="w-full text-left text-sm">
-                    <thead className="sticky top-0 bg-[#0f172a] text-gray-400 uppercase text-xs">
+                    <thead className="sticky top-0 bg-[#0f172a] text-gray-400 uppercase text-xs z-10 shadow-lg">
                         <tr>
-                            <th className="p-4">Time</th>
-                            <th className="p-4">User</th>
-                            <th className="p-4">Action</th>
-                            <th className="p-4">Details</th>
+                            <th className="p-4 bg-[#0f172a]">Time</th>
+                            <th className="p-4 bg-[#0f172a]">User</th>
+                            <th className="p-4 bg-[#0f172a]">Action</th>
+                            <th className="p-4 bg-[#0f172a]">Details</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-white/5 font-mono">
