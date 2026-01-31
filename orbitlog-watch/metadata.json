@@ -1,0 +1,5 @@
+{
+  "name": "OrbitLog Watch",
+  "description": "A circular log viewer optimized for Galaxy Watch 4 (450x450px) to visualize JSONBin logs.",
+  "requestFramePermissions": []
+}

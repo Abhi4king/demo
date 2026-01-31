@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>OrbitLog Watch</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              watch: {
+                bg: 'var(--watch-bg)',
+                surface: 'var(--watch-surface)',
+                text: 'var(--watch-text)',
+                muted: 'var(--watch-muted)',
+                border: 'var(--watch-border)',
+                accent: '#3b82f6',
+                danger: '#ef4444',
+                warning: '#eab308',
+                success: '#22c55e',
+              }
+            },
+            fontFamily: {
+              sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      :root {
+        /* Light Theme Defaults */
+        --watch-bg: #f3f4f6;
+        --watch-surface: #ffffff;
+        --watch-text: #111827;
+        --watch-muted: #6b7280;
+        --watch-border: #e5e7eb;
+      }
+      
+      .dark-theme {
+        /* Dark Theme Defaults */
+        --watch-bg: #000000;
+        --watch-surface: #1a1a1a;
+        --watch-text: #ffffff;
+        --watch-muted: #94a3b8;
+        --watch-border: #334155;
+      }
+
+      /* Hide scrollbar for Chrome, Safari and Opera */
+      .no-scrollbar::-webkit-scrollbar {
+          display: none;
+      }
+      /* Hide scrollbar for IE, Edge and Firefox */
+      .no-scrollbar {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+      }
+      
+      html, body {
+        width: 100vw;
+        height: 100vh;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+        background-color: #000;
+        position: fixed;
+      }
+
+      #root {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0?deps=react@18.2.0",
+    "react-dom/": "https://esm.sh/react-dom@18.2.0/",
+    "react/": "https://esm.sh/react@18.2.0/",
+    "react": "https://esm.sh/react@18.2.0"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body>
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
+</body>
+</html>
